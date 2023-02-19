@@ -1,4 +1,6 @@
 COVID-19 Cases in Italy
+
+
 This repository contains SQL queries for pulling data on COVID-19 cases in Italy, using the COVID-19 Italy - Historical Data by Region dataset. The dataset is available on [Google BigQuery and is updated regularly.](https://console.cloud.google.com/bigquery?p=bigquery-public-data&d=covid19_italy&page=dataset)
 
 The SQL queries in this repository are designed to help you explore and analyze the data, and can be used to answer a variety of questions about the COVID-19 pandemic in Italy. The queries cover a range of topics, such as:
