@@ -1,0 +1,6 @@
+-- Show distinct province code
+
+SELECT DISTINCT P.province_code  AS Province
+
+
+FROM `bigquery-public-data.covid19_italy.data_by_province` P
