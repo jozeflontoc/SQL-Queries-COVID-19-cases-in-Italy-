@@ -4,3 +4,54 @@ SELECT DISTINCT P.province_code  AS Province
 
 
 FROM `bigquery-public-data.covid19_italy.data_by_province` P
+
+-- Show the daily running total of cases in province 880 and 98, show region as well
+
+SELECT
+  P.name
+  ,P.date
+  ,P.province_code
+  ,P.confirmed_cases
+
+
+FROM `bigquery-public-data.covid19_italy.data_by_province` P
+
+WHERE P.province_code IN ('880','98')
+
+-- show the daily increase in total cases on a national level 
+-- from decmeber 01,2020 to january 31,2021
+
+
+SELECT
+TIMESTAMP(N.date) as Time_Stamp
+,N.total_confirmed_cases
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+WHERE TIMESTAMP(N.date) BETWEEN TIMESTAMP ('2020-12-01') AND TIMESTAMP('2021-01-31')
+
+-- show the running total of tests performed in region 14 as of decemver 31,2020
+SELECT 
+  R.date
+  ,R.region_code
+  ,R.region_name
+  ,R.tests_performed
+
+
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+
+WHERE R.region_code = '14'
+AND R.date <='2020-12-31'
+
+-- SHOW THE DAILY INCREASE IN CASES FOR REGIONS 8 AND 19 FOR MONTHS OF OCTOBER 2020 AND FEB 2021
+
+SELECT
+  DATE(R.date)
+  ,R.new_total_confirmed_cases
+  ,R.region_name
+  ,R.region_code
+
+
+FROM `bigquery-public-data.covid19_italy.data_by_region`R
+
+WHERE R.region_code IN ('8','19')
+  AND DATE(R.date) BETWEEN DATE('2020-10-01') AND DATE('2020-10-31')
+  OR DATE(R.date) BETWEEN DATE('2021-02-01') AND DATE('2020-02-28')
