@@ -1,0 +1,156 @@
+-- show the daily new current confirmed cases per region and its corresponding level (0-500 - low, 501-1000 medium, >1000 high; else negative) consider only august 2021 to october 2021
+SELECT
+  R.date,
+  R.region_name,
+  R.region_code,
+  CASE WHEN R.new_current_confirmed_cases BETWEEN 0 AND 500 THEN 'Low'
+      WHEN R.new_current_confirmed_cases BETWEEN 501 AND 1000 THEN 'Medium'
+  else 'Negative'
+  END AS Level
+
+
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R
+    where R.date BETWEEN ('2021-08-01') AND ('2021-10-31')
+ -- Get the national positivity rate and hospitalization rate (current hospitalized/current cases) as of the most recent date available. 
+SELECT
+  N.date,
+  N.total_confirmed_cases/N.tests_performed as Positivity_rate,
+  N.total_hospitalized_patients/N.total_current_confirmed_cases as hospitalization_rate
+
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+WHERE N.DATE = (SELECT MAX (N.date) 
+             FROM `bigquery-public-data.covid19_italy.national_trends` N)
+             
+             
+/* Consider the following dates as points of interests: 
+Jan 2020 - June 2020: Start of Pandemic 
+July 2020 - Dec 2020: Research on Vaccination 
+Jan 2021 - September 2021: First Vaccination Round 
+October 2021 - Current Date: Booster shots */
+
+
+-- Show the dates, increases, and categorization of the periods 
+SELECT  
+    N.date 
+    , CASE 
+        WHEN DATE(N.date) BETWEEN DATE('2020-01-01') AND DATE('2020-06-30') THEN 'Start of Pandemic'
+        WHEN DATE(N.date) BETWEEN DATE('2020-07-01') AND DATE('2020-12-31') THEN 'Vaccination Research'
+        WHEN DATE(N.date) BETWEEN DATE('2021-01-01') AND DATE('2021-09-30') THEN 'First Vaccination Round' 
+        WHEN DATE(N.date) BETWEEN DATE('2021-10-01') AND CURRENT_DATE THEN 'Booster shots' 
+        ELSE 'Others' 
+        END AS period
+    , N.new_total_confirmed_cases
+FROM 
+    `bigquery-public-data.covid19_italy.national_trends` N 
+ORDER BY 
+    1 ASC; 
+
+- Consider regions 4,5,6,7 as regions of interest. 
+-- Get the total proportion of daily new cases for these regions to the total across all regions. Consider only days where 
+-- the SUM of all regions > 0 
+
+SELECT 
+    R.date 
+    , SUM(
+        CASE 
+            WHEN R.region_code IN ('4','5','6','7') THEN R.new_total_confirmed_cases 
+            ELSE 0
+            END
+        ) AS total_selected_region_cases
+    , SUM(R.new_total_confirmed_cases) AS total_cases
+    , SUM(CASE 
+        WHEN R.region_code IN ('4','5','6','7') THEN R.new_total_confirmed_cases 
+        ELSE 0
+        END
+        )/SUM(R.new_total_confirmed_cases) AS proportion
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R 
+GROUP BY 
+    1
+HAVING 
+    SUM(R.new_total_confirmed_cases) >0;
+    
+    /* get the most recent regional data. include new current cases, and new total current cases */ 
+
+-- most recent = max date in regional table 
+
+
+
+
+
+
+
+SELECT 
+    R.date 
+    , R.region_code 
+    , R.region_name 
+    , R.new_current_confirmed_cases
+    , R.new_total_confirmed_cases
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R 
+WHERE 
+    R.date = (SELECT MAX(R.date) FROM `bigquery-public-data.covid19_italy.data_by_region` R );
+
+
+
+
+
+
+
+/* compare the total daily increase in cases in the regional table to the national table, to see if the numbers match */
+-- ideally: sum of new cases per region for a certain day = total new cases nationally for that certain day
+
+
+
+
+
+
+
+
+
+SELECT 
+    R.date 
+    , R.case_inc AS r_table_case_inc 
+    , N.new_total_confirmed_cases AS n_table_case_inc 
+    , R.case_inc - N.new_total_confirmed_cases AS diff 
+FROM (
+    SELECT 
+        R.date
+        , SUM(R.new_total_confirmed_cases) AS case_inc 
+    FROM 
+        `bigquery-public-data.covid19_italy.data_by_region` R
+    GROUP BY 
+        1
+    ) R 
+LEFT JOIN 
+    `bigquery-public-data.covid19_italy.national_trends` N 
+    ON R.date = N.date;
+
+
+
+/* Another way of writing: */ 
+
+WITH region_agg AS (
+    SELECT 
+        R.date
+        , SUM(R.new_total_confirmed_cases) AS case_inc 
+    FROM 
+        `bigquery-public-data.covid19_italy.data_by_region` R
+    GROUP BY 
+        1
+)
+
+SELECT 
+    R.date 
+    , R.case_inc AS r_table_case_inc
+    , N.new_total_confirmed_cases AS n_table_case_inc
+    , R.case_inc - N.new_total_confirmed_cases AS diff 
+FROM 
+    region_agg R 
+LEFT JOIN 
+    `bigquery-public-data.covid19_italy.national_trends` N 
+    ON R.date = N.date ;
+
+
+         
