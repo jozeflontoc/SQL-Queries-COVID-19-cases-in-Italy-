@@ -55,3 +55,58 @@ FROM `bigquery-public-data.covid19_italy.data_by_region`R
 WHERE R.region_code IN ('8','19')
   AND DATE(R.date) BETWEEN DATE('2020-10-01') AND DATE('2020-10-31')
   OR DATE(R.date) BETWEEN DATE('2021-02-01') AND DATE('2020-02-28')
+
+
+/* Show the positivity rate and 
+fatality rate for each day, 
+on a national level. 
+Take note that positivity rate =
+ total cases/total performed, while  
+ fatality rate = total deaths/total cases */ 
+
+ SELECT 
+    N.date 
+    , N.total_confirmed_cases
+    , N.tests_performed
+    , N.deaths
+    , N.total_confirmed_cases/N.tests_performed AS positivity_rate 
+    , N.deaths/N.total_confirmed_cases AS fatality_rate 
+FROM 
+    `bigquery-public-data.covid19_italy.national_trends` N;
+
+
+/* Which region and days recorded more 
+than 10000 in current hospitalized patients? 
+Show the split between hospitalized with 
+symptoms and hospitalized in intensive care */ 
+
+
+SELECT 
+    R.date 
+    , R.region_code
+    , R.region_name 
+    , R.total_hospitalized_patients
+    , R.hospitalized_patients_symptoms/R.total_hospitalized_patients AS symptoms_pct 
+    , R.hospitalized_patients_intensive_care/R.total_hospitalized_patients AS intensive_care_pct
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R 
+WHERE 
+    R.total_hospitalized_patients > 10000;
+
+
+/* What is the hospitalization rate on a national level, 
+for December 25, 2020? 
+Note the ff: 
+Hospitalization rate = total current hospitalized/total current cases. */
+
+SELECT 
+    N.date 
+    , N.total_hospitalized_patients
+    , N.total_current_confirmed_cases
+    , N.total_hospitalized_patients/N.total_current_confirmed_cases
+            AS hospitalization_rate 
+FROM 
+    `bigquery-public-data.covid19_italy.national_trends` N 
+WHERE 
+    DATE(N.date) = DATE('2020-12-25')
+
