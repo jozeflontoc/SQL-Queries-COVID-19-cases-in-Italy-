@@ -1,0 +1,41 @@
+/* Show the daily increase in cases for regions 8 and 19, for the months of October 2020 and Feb 2021 
+Sort output results by date and then by region*/
+
+SELECT 
+    R.date 
+    , R.region_code 
+    , R.region_name 
+    , R.new_total_confirmed_cases
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R 
+WHERE 
+    R.region_code IN ('8','19')
+    AND (DATE(R.date) BETWEEN DATE('2020-10-01') AND DATE('2021-10-31')
+    OR DATE(R.date) BETWEEN DATE('2021-02-01') AND DATE('2021-02-28'))
+ORDER BY 
+    1 ASC, 2 ASC;
+
+/* Which days had the highest recorded total case increase (national level). Limit results to 5 */ 
+SELECT 
+    N.date 
+    , N.new_total_confirmed_cases
+FROM 
+    `bigquery-public-data.covid19_italy.national_trends` N 
+ORDER BY 
+    2 DESC 
+LIMIT 5;
+
+/* Which region recorded the highest fatality rate (use cumulative figures), as of September 30, 2021? */ 
+
+SELECT 
+    R.date 
+    , R.region_code
+    , R.region_name 
+    , R.deaths/R.total_confirmed_cases AS fatality_rate 
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R 
+WHERE 
+    DATE(R.date) = DATE('2021-09-30')
+ORDER BY 
+    4 DESC 
+LIMIT 1;
