@@ -1,0 +1,263 @@
+-- what is the latest reporting date recorded nationally?
+
+SELECT
+  MAX(N.date) AS Latest_reporting_date
+
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+-- on a national level, what is the highest daily case increase?
+
+SELECT
+  MAX(N.new_current_confirmed_cases) as Max_daily_case
+
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+
+-- what is the average number if current cases in valle d'aosta(2) for feb 2021
+
+SELECT
+   
+  AVG(R.total_current_confirmed_cases) AS Average_current_cases
+
+
+
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE R.region_code = '2'
+AND DATE(R.date) BETWEEN DATE('2021-02-01')AND DATE('2021-02-28')
+
+
+SELECT 
+  AVG(R.total_current_confirmed_cases) AS Average_current_cases,
+ 
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE R.region_code = '2'
+  AND DATE(R.date) BETWEEN DATE('2021-02-01') AND DATE('2021-02-28')
+
+-- GROUP BY AND HAVING
+
+-- WHAT IS THE MIN AND MAX CURRENT CASE COUNT PER REGION? ONLY INCLUDE DAYS WHERE THERE ARE MORE THAN 1 CURRENT CASE
+
+SELECT
+  R.region_code
+  ,R.region_name
+  ,MAX(R.total_current_confirmed_cases) AS max_current_case
+  ,MIN(R.total_current_confirmed_cases) AS min_current_case
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+
+WHERE R.total_current_confirmed_cases > 1
+GROUP BY
+  1,2
+  ORDER BY
+    2
+
+    -- get the average hospitalization rate per region per month. Order averages descending. consider only days with >10 current cases
+SELECT
+  DATE_TRUNC(R.date,MONTH) AS Month
+  ,R.region_name
+  ,R.region_code
+  ,AVG(R.total_hospitalized_patients/R.total_current_confirmed_cases) AS avg_hosp_rate
+  
+FROM  `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE R.total_current_confirmed_cases > 10
+GROUP BY 
+  1,2,3
+  -- having greater than 0.72
+HAVING 
+  avg_hosp_rate >0.72
+ORDER BY
+  4 DESC
+
+
+
+
+
+-- WHAT IS THE FIRST AND LATEST DATE RECORDED, IN THE NATIONAL TRENDS TABLE?
+
+SELECT
+  MIN(N.date)AS First_date_record
+  ,MAX(N.date)AS Last_date_record
+
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+
+-- What is the national average total current cases across all dates?
+SELECT
+  N.date
+  ,AVG(N.total_current_confirmed_cases)AS avg_total_current_cases
+
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+GROUP BY 
+  1
+-- Show the average total current cases per month? sort results per month, ascending Note: you can aggregate on the whole month by using DATE_Trunc
+SELECT
+    DATE_TRUNC(N.date,MONTH) AS Date
+  ,AVG(N.total_current_confirmed_cases)AS avg_total_current_cases
+
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+GROUP BY
+  1
+ORDER BY
+  1
+  --Based on the previous question, which months registered an average of more than 100000 current cases? Sirt results by ascending.
+
+SELECT
+    DATE_TRUNC(N.date,MONTH) AS Date
+  ,AVG(N.total_current_confirmed_cases)AS avg_total_current_cases
+
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+GROUP BY
+  1
+HAVING avg_total_current_cases > 100000
+ORDER BY
+  1
+
+-- BATCH 2
+-- 1. Show the monthy increase of cases per regions per months of July 2021 to September 2021. Sort results by region name, then by date.
+SELECT 
+  DATE_TRUNC(R.date,MONTH) AS date
+  ,R.region_name
+  ,SUM(R.new_total_confirmed_cases) AS Monthly_increase
+
+
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE DATE(R.date) BETWEEN DATE('2021-07-01') AND DATE('2021-09-30')
+GROUP BY 
+  1,2
+ORDER BY
+  1
+
+-- From the previous question. which regions registered an increase of more than 10000?
+SELECT 
+  DATE_TRUNC(R.date,MONTH) AS date
+  ,R.region_name
+  ,SUM(R.new_total_confirmed_cases) AS Monthly_increase
+
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE DATE(R.date) BETWEEN DATE('2021-07-01') AND DATE('2021-09-30')
+
+GROUP BY 
+  1,2
+HAVING Monthly_increase > 10000
+ORDER BY
+  1
+
+-- Which regions have an average fatality rate of less than 5%? Consider only days where total cases > 0, and sort results from highest fatality rate to lowest. 
+SELECT
+  R.region_name,
+  AVG(R.deaths/R.total_confirmed_cases)*100 AS pct_Avg_fatality_rate
+
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE R.total_confirmed_cases > 0
+GROUP BY 
+  1
+HAVING pct_Avg_fatality_rate < 5
+ORDER BY
+  pct_Avg_fatality_rate DESC
+-- batch 3
+-- Which province names have more than 1 unique code assigned to them?  
+-- HINT: you can use COUNT(DISTINCT()) to count only distinct values 
+SELECT 
+  P.province_name,
+  
+  COUNT(DISTINCT(P.province_code))AS Unique_code
+
+
+FROM `bigquery-public-data.covid19_italy.data_by_province` P
+GROUP BY 1
+HAVING 
+    Unique_code > 1
+
+-- Which regions and months registered the highest monthly total increase in cases? Consider only regions 1,6,8,10, and 15. Also only show months where avg recovery rate is > 0.9 (recovery rate = total recovered/total cases). 
+SELECT
+  DATE_trunc(R.date,MONTH) AS date,
+  R.region_name,
+  SUM(R.new_total_confirmed_cases) AS Monthly_total,
+  AVG (R.recovered/R.total_confirmed_cases)AS Recovery_rate
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE R.region_code IN ('1','6','8','10','15')
+AND R.new_total_confirmed_cases > 0 
+GROUP BY 1,2
+HAVING Recovery_rate > 0.9
+ORDER BY
+Monthly_total DESC
+
+-- Which regions had more than 10 days with a case increase > 2500?  Sort results showing the highest day-count first 
+
+SELECT
+  R.region_name,
+  COUNT(DISTINCT R.date) AS Day_count
+
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE R.new_total_confirmed_cases >2500
+
+GROUP BY 1
+HAVING Day_count >10
+ORDER BY 
+Day_count DESC
+
+-- 1 Which regions have listed province names as ‘Provincia Autonoma’ (Autonomous province)? Show the distinct regions only, and order by region name ascending 
+SELECT DISTINCT
+    P.province_name,
+    P.name AS Region
+    FROM
+`bigquery-public-data.covid19_italy.data_by_province` P
+
+WHERE
+    P.province_name LIKE '%Provincia Autonoma%'
+ ORDER BY
+  Region;
+
+  -- 2 Show all dates and provinces where there is a note recorded in the ‘note’ column. Consider only regions 20 and 8, and the second quarter for 2020 and 2021.
+-- Note: to filter for if a column is null, you can use [column] IS NOT NULL in the WHERE clause.
+
+SELECT
+  DATE(P.date) AS Date,
+  P.province_name,
+  P.region_code,
+  P.note
+FROM `bigquery-public-data.covid19_italy.data_by_province` P
+WHERE P.region_code IN ('20','8')
+  AND P.note IS NOT NULL
+  AND (
+    (DATE(P.date) BETWEEN DATE('2020-04-01') AND DATE('2020-06-30'))
+    OR (DATE(P.date) BETWEEN DATE('2021-04-01') AND DATE('2021-06-30')))
+
+    -- 3 Which dates and regions registered more than 2000 current cases in the months of July 2021 and August 2021? Sort results by hospitalization rate (total hospitalized/total current cases).
+  SELECT
+    DATE_TRUNC(R.date, MONTH) AS month,
+    R.region_name,
+    R.total_hospitalized_patients / R.total_current_confirmed_cases AS hospitalization_rate
+FROM
+    `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+    R.total_current_confirmed_cases > 2000
+    AND (
+        DATE(R.date) BETWEEN DATE('2021-07-01') AND DATE('2021-07-31')
+        OR DATE(R.date) BETWEEN DATE('2021-08-01') AND DATE('2021-08-30')
+    )
+ORDER BY
+    hospitalization_rate DESC
+
+-- 4. Which days have the highest ratio between home confinement and total hospitalized patients? Show the recovery rate (total recovered/total confirmed cases). Consider only the 15th of every month. 
+-- Note: to get a certain ‘part’ of a date or timestamp, you can use EXTRACT([part] FROM [date]) (for ex: to get the day of the month, use EXTRACT(DAY FROM date), where date is the column in the database)
+-- SELECT
+  DATE(R.date) as Date,
+  R.home_confinement_cases/R.total_hospitalized_patients as ratio,
+  R.recovered/R.total_confirmed_cases as recovery_rate
+
+
+FROM
+    `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE EXTRACT(DAY FROM R.date) = 15
+ORDER BY 1
+-- data by region error division by zero
+
+
+SELECT
+N.date
+  , N.home_confinement_cases / N.total_hospitalized_patients AS ratio
+  , N.recovered / N.total_confirmed_cases AS recovery_rate
+FROM
+  `bigquery-public-data.covid19_italy.national_trends`  N
+WHERE
+  EXTRACT(DAY FROM N.date) = 15
+ORDER BY
+  1
+
