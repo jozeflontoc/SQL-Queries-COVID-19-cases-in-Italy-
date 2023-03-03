@@ -1,0 +1,94 @@
+-- Combine the regional and national tables. Show both regional and national total confirmed cases, and rename columns as needed.
+SELECT
+  R.date as Date,
+  R.total_confirmed_cases as Regional_confirmed_cases,
+  N.total_confirmed_cases as National_confirmed_cases
+
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+INNER JOIN `bigquery-public-data.covid19_italy.national_trends`N
+ON N.date = R.date
+
+ 
+-- How much did region 5 contribute in total testing? (i.e. total regional testing / total national testing)? Show on a daily basis for August 2020. 
+
+SELECT
+    R.date,
+    R.region_name,
+    R.region_code,
+    R.tests_performed/N.tests_performed as test_pct
+
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R
+LEFT JOIN
+    `bigquery-public-data.covid19_italy.national_trends` N
+    ON R.date = N.date
+WHERE
+    R.region_code = '5'
+    AND DATE(R.date) BETWEEN DATE('2020-08-01') AND DATE ('2020-08-31')
+
+-- Show region 3’s contribution to total national cases, as of August 01, 2021.
+SELECT 
+    R.date 
+    , R.region_code
+    , R.region_name 
+    , R.total_confirmed_cases/N.total_confirmed_cases AS case_pct
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R 
+LEFT JOIN 
+    `bigquery-public-data.covid19_italy.national_trends` N 
+    ON R.date = N.date  
+WHERE 
+    R.region_code = '3'
+    AND DATE(R.date) = DATE('2021-08-01')
+--Which region had the highest contribution in total current national cases, as of October 31, 2021?    
+SELECT 
+    R.date 
+    , R.region_code
+    , R.region_name 
+    , R.total_current_confirmed_cases/N.total_current_confirmed_cases 
+AS case_pct
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R 
+LEFT JOIN 
+    `bigquery-public-data.covid19_italy.national_trends` N 
+    ON R.date = N.date  
+WHERE 
+    DATE(R.date) = DATE('2021-10-31')
+ORDER BY 
+    4 DESC 
+LIMIT 1 
+--Show the contribution of each province to the total regional cases, for each day. Only include days where total regional confirmed cases > 0.  
+SELECT 
+    P.date 
+    , P.province_name 
+    , P.province_code 
+    , R.region_name 
+    , R.region_code
+    , P.confirmed_cases/R.total_confirmed_cases 
+        AS cases_pct 
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_province` P 
+LEFT JOIN 
+    `bigquery-public-data.covid19_italy.data_by_region` R
+    ON P.date = R.date
+    AND P.region_code = R.region_code 
+WHERE 
+    R.total_confirmed_cases > 0 
+--Which province had the highest contribution to total national cases, for November 01, 2021?
+SELECT 
+    P.date 
+    , P.province_name 
+    , P.province_code 
+    , P.confirmed_cases/N.total_confirmed_cases 
+        AS cases_pct 
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_province` P 
+LEFT JOIN 
+    `bigquery-public-data.covid19_italy.national_trends` N
+    ON P.date = N.date
+WHERE 
+    DATE(P.date) = DATE('2021-11-01')   
+ORDER BY 
+    4 DESC 
+LIMIT 1 
+
